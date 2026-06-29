@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- iOS Standalone Web App (PWA) 全螢幕模式設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="智廚助手">
+  <meta name="theme-color" content="#FCF3E3">
+  
+  <!-- iOS 主畫面專屬 APP 圖示 (180x180) -->
+  <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=180&h=180&fit=crop">
+
+  <!-- Open Graph (OG) 社群分享卡片預覽設定 (適用於 LINE / Facebook) -->
+  <meta property="og:title" content="SmartKitchen 智廚食譜助手">
+  <meta property="og:description" content="專為氣炸鍋、電鍋和電磁爐打造的 AI 智慧食譜工具。支援網址自動解析、食材備料清單與定時器，為您帶來優雅流暢的廚房體驗！">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&h=630&fit=crop">
+  <meta property="og:site_name" content="SmartKitchen">
+
+  <title>SmartKitchen 智廚食譜助手</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts for Editorial Luxury -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..900;1,400..900&family=Noto+Serif+TC:wght@400;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Noto Sans TC', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            serif: ['Noto Serif TC', 'Bodoni Moda', 'serif'],
+          },
+          colors: {
+            midnight: '#013D5A',   // 品牌主色 (深邃午夜藍)
+            lionsmane: '#FCF3E3',  // 輔助暖色 (獅鬃暖奶油)
+            celeste: '#BDD3CE',    // 優雅次色 (天青石粉綠)
+            herb: '#708C69',       // 自然配色 (香草葉香綠)
+            marigold: '#F4A258',   // 點綴警示 (金盞花橙黃)
+          },
+          boxShadow: {
+            'premium-nav': '0 1px 0 0 rgba(1, 61, 90, 0.03), 0 4px 20px rgba(1, 61, 90, 0.01)',
+            'premium-card': '0 8px 30px -4px rgba(1, 61, 90, 0.03), 0 1px 6px -1px rgba(1, 61, 90, 0.01)',
+            'premium-hover': '0 16px 36px -6px rgba(1, 61, 90, 0.06), 0 2px 10px -2px rgba(1, 61, 90, 0.02)',
+            'premium-sheet': '0 -15px 45px -5px rgba(1, 61, 90, 0.1)',
+            'premium-alert': '0 24px 50px -12px rgba(1, 61, 90, 0.2)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --sat: env(safe-area-inset-top);
+      --sab: env(safe-area-inset-bottom);
+    }
+    body {
+      background-color: #FAF9F6; /* 高雅、清透的極淡象牙白 */
+      background-image: radial-gradient(at 0% 0%, rgba(189, 211, 206, 0.15) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, rgba(252, 243, 227, 0.3) 0px, transparent 50%);
+      -webkit-tap-highlight-color: transparent; 
+      user-select: none;
+    }
+    /* iOS Custom Transition Sheets with high-end spring physics */
+    .ios-modal-transition {
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    }
+    .ios-toast-animation {
+      animation: iosToastIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes iosToastIn {
+      from { transform: translate(-50%, -30px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    /* Thin high-end borders */
+    .premium-border {
+      border: 1px solid rgba(189, 211, 206, 0.3);
+    }
+    .premium-divider {
+      border-color: rgba(189, 211, 206, 0.2);
+    }
+    /* Smooth rotation animation */
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spinSlow 12s linear infinite;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-slate-800 min-h-screen flex flex-col">
+
+  <!-- iOS Premium Toast Notification -->
+  <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm pointer-events-none"></div>
+
+  <!-- iOS Premium Confirmation Alert (Designed as high-end popover) -->
+  <div id="ios-confirm-dialog" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-6 bg-midnight/20 backdrop-blur-sm transition-all duration-300">
+    <div class="bg-white/95 backdrop-blur-lg rounded-2xl max-w-[280px] w-full overflow-hidden shadow-premium-alert text-center transform scale-90 transition-transform duration-300 premium-border" id="ios-confirm-content">
+      <div class="p-6">
+        <div class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3.5">
+          <i class="fa-solid fa-trash-can text-sm"></i>
+        </div>
+        <h4 id="ios-confirm-title" class="text-base font-bold text-slate-900 font-serif">刪除此食譜？</h4>
+        <p id="ios-confirm-message" class="text-xs text-slate-400 mt-2 leading-relaxed">此操作將無法回復，本機快取食譜資料會永久遺失。</p>
+      </div>
+      <div class="grid grid-cols-2 border-t border-slate-100 text-sm font-semibold">
+        <button id="ios-confirm-cancel" class="py-3 text-slate-400 border-r border-slate-100 active:bg-slate-50 transition-colors">取消</button>
+        <button id="ios-confirm-action" class="py-3 text-red-500 active:bg-red-50 transition-colors">確認刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITORIAL STYLE NAVIGATION BAR -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-celeste/20 sticky top-0 z-40 pt-safe-top pb-3.5 shadow-premium-nav">
+    <div class="max-w-xl mx-auto px-4 flex items-center justify-between">
+      <!-- Title Block -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 bg-midnight rounded-xl flex items-center justify-center text-lionsmane shadow-md shadow-midnight/5">
+          <i class="fa-solid fa-kitchen-set text-sm"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-midnight tracking-tight font-serif">SmartKitchen</h1>
+          <p class="text-[9px] text-[#708C69] font-black tracking-widest uppercase -mt-0.5">智廚食譜助手</p>
+        </div>
+      </div>
+
+      <!-- iOS Segmented Pages for Wide Width -->
+      <nav class="hidden md:flex space-x-1 bg-[#BDD3CE]/15 p-1 rounded-xl">
+        <button onclick="switchTab('recipes')" id="desktop-tab-recipes" class="desktop-tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all bg-white text-midnight shadow-sm">我的食譜庫</button>
+        <button onclick="switchTab('ai-import')" id="desktop-tab-ai-import" class="desktop-tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-midnight">AI 網址匯入</button>
+        <button onclick="switchTab('docs')" id="desktop-tab-docs" class="desktop-tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-midnight">規劃文件</button>
+      </nav>
+
+      <!-- Active Timer Quick Widget in Header -->
+      <div id="active-timer-widget" class="hidden items-center gap-1.5 bg-marigold/10 border border-marigold/20 px-3 py-1 rounded-full text-[10px] font-black text-midnight animate-pulse">
+        <i class="fa-solid fa-stopwatch text-marigold"></i>
+        <span id="widget-timer-display">00:00</span>
+      </div>
+
+      <!-- Right Action Button: iOS Style "+" Add Button -->
+      <button onclick="openManualRecipeModal()" class="w-9 h-9 bg-white/90 hover:bg-white text-midnight rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm border border-celeste/20">
+        <i class="fa-solid fa-plus text-xs font-bold"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main class="flex-grow max-w-xl w-full mx-auto px-4 py-5 pb-safe-bottom space-y-5">
+
+    <!-- TAB 1: MY RECIPES -->
+    <section id="section-recipes" class="space-y-4">
+      
+      <!-- iOS Segmented Control (Category Filters) -->
+      <div class="bg-[#BDD3CE]/20 p-1 rounded-xl flex w-full border border-celeste/10 shadow-[inset_0_1px_3px_rgba(1,61,90,0.02)]" id="appliance-filters">
+        <button onclick="filterRecipes('全部')" class="filter-pill flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all duration-300 bg-white text-midnight shadow-sm" data-appliance="全部">
+          全部食譜
+        </button>
+        <button onclick="filterRecipes('氣炸鍋')" class="filter-pill flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all duration-300 text-slate-500 hover:text-midnight" data-appliance="氣炸鍋">
+          氣炸鍋
+        </button>
+        <button onclick="filterRecipes('電鍋')" class="filter-pill flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all duration-300 text-slate-500 hover:text-midnight" data-appliance="電鍋">
+          電鍋
+        </button>
+        <button onclick="filterRecipes('電磁爐')" class="filter-pill flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all duration-300 text-slate-500 hover:text-midnight" data-appliance="電磁爐">
+          電磁爐
+        </button>
+      </div>
+
+      <!-- iOS Style Native Search Bar -->
+      <div class="flex items-center gap-2 w-full transition-all">
+        <div class="relative flex-grow">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          </span>
+          <input type="text" id="recipe-search" oninput="searchRecipes()" onfocus="focusSearchBar()" onblur="blurSearchBar()" placeholder="搜尋食譜或食材..." class="w-full pl-9 pr-9 py-2.5 bg-white/70 backdrop-blur-sm border border-celeste/25 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-midnight/10 focus:bg-white transition-all">
+          <button onclick="clearSearchInput()" id="btn-search-clear" class="hidden absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 active:text-slate-600">
+            <i class="fa-solid fa-circle-xmark text-xs"></i>
+          </button>
+        </div>
+        <button id="search-cancel-btn" onclick="cancelSearchMode()" class="hidden text-xs font-bold text-midnight active:opacity-75 transition-all">取消</button>
+      </div>
+
+      <!-- Premium Quick Note -->
+      <div class="bg-white/80 rounded-2xl p-4 shadow-premium-card border border-celeste/20 flex items-start gap-3.5">
+        <div class="w-8 h-8 rounded-xl bg-[#708C69]/10 flex items-center justify-center text-[#708C69] shrink-0">
+          <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+        </div>
+        <div class="space-y-0.5">
+          <span class="text-xs font-bold text-midnight font-serif block">AI 自動辨識食材與廚具</span>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            貼上網路食譜連結到 <strong class="text-midnight underline cursor-pointer font-bold" onclick="switchTab('ai-import')">AI 網址匯入</strong>，系統即可為您自動解析備料及合適廚具。
+          </p>
+        </div>
+      </div>
+
+      <!-- Inset Grouped Recipes Container -->
+      <div class="space-y-3.5" id="recipes-grid">
+        <!-- Dynamic Cards -->
+      </div>
+
+      <!-- iOS Empty State -->
+      <div id="recipes-empty-state" class="hidden flex-col items-center justify-center py-16 bg-white/60 backdrop-blur-sm rounded-2xl border border-dashed border-celeste/30 text-center p-6">
+        <div class="w-12 h-12 bg-[#FCF3E3] text-midnight rounded-full flex items-center justify-center mb-3.5 shadow-sm border border-celeste/20">
+          <i class="fa-solid fa-utensils text-sm"></i>
+        </div>
+        <h3 class="text-xs font-bold text-midnight font-serif">尚無食譜資料</h3>
+        <p class="text-[11px] text-slate-400 mt-1 max-w-xs leading-normal">點擊右上角「+」或前往「AI 網址匯入」功能開始撰寫您的廚房食譜指南。</p>
+      </div>
+    </section>
+
+    <!-- TAB 2: AI URL IMPORT -->
+    <section id="section-ai-import" class="hidden space-y-4 animate-in fade-in duration-200">
+      <!-- Premium Hero Header -->
+      <div class="bg-gradient-to-br from-[#013D5A] to-[#012538] text-lionsmane p-6 rounded-2xl shadow-premium-card relative overflow-hidden border border-midnight">
+        <div class="absolute -right-5 -bottom-5 opacity-5 text-[120px] pointer-events-none">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </div>
+        <div class="relative z-10 space-y-2">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black bg-[#F4A258]/10 text-marigold border border-marigold/20 tracking-wider uppercase">
+            <i class="fa-solid fa-bolt text-[9px]"></i> Powered by Gemini 2.5
+          </span>
+          <h2 class="text-lg font-bold tracking-tight font-serif">AI 網址自動 analysis</h2>
+          <p class="text-xs text-celeste leading-relaxed max-w-md">
+            直接貼上愛料理（iCook）、廚藝部落格或關鍵字。AI 將自動爬網搜尋，瞬時生成結構化食材與製作工序步驟。
+          </p>
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="bg-white/80 p-5 rounded-2xl shadow-premium-card border border-celeste/20 space-y-3.5">
+        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">輸入食譜網址或主題關鍵字</label>
+        <textarea id="ai-import-url" rows="3" placeholder="例如：https://icook.tw/recipes/384210 或輸入「氣炸鍋香烤鮭魚」..." class="w-full px-3.5 py-3 bg-white/90 border border-celeste/20 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-midnight/10 focus:border-celeste transition-all custom-scrollbar placeholder-slate-300"></textarea>
+        
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button onclick="simulateAiImport()" class="w-full py-2.5 bg-white border border-celeste/20 text-slate-600 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-vial text-[10px] text-marigold"></i> 測試模擬
+          </button>
+          <button onclick="startAiImport()" id="btn-ai-submit" class="w-full py-2.5 bg-midnight hover:bg-midnight/90 text-lionsmane text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all">
+            <i class="fa-solid fa-wand-magic-sparkles text-marigold"></i> 智慧解析
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Sheet Card -->
+      <div class="bg-white/90 p-5 rounded-2xl shadow-premium-card border border-celeste/20 min-h-[160px] flex flex-col justify-center">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">AI 預覽校對區</h3>
+
+        <!-- Loading State -->
+        <div id="ai-loading-state" class="hidden flex-col items-center justify-center py-8 text-center">
+          <div class="relative w-12 h-12 flex items-center justify-center mb-3">
+            <div class="absolute inset-0 rounded-full border-2 border-celeste/20"></div>
+            <div class="absolute inset-0 rounded-full border-2 border-midnight border-t-transparent animate-spin"></div>
+            <i class="fa-solid fa-brain text-marigold text-xs"></i>
+          </div>
+          <p class="text-xs font-bold text-midnight animate-pulse">正在擷取分析中...</p>
+        </div>
+
+        <!-- Empty Preview -->
+        <div id="ai-empty-preview-state" class="flex flex-col items-center justify-center text-slate-300 py-8 text-center">
+          <div class="text-2xl mb-2"><i class="fa-solid fa-receipt"></i></div>
+          <p class="text-[11px] font-semibold text-slate-400">請輸入上方資訊進行解析，轉換後之食譜細節將會呈現在此。</p>
+        </div>
+
+        <!-- Result Form -->
+        <div id="ai-result-form" class="hidden space-y-4">
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1">食譜名稱</label>
+              <input type="text" id="ai-preview-title" class="w-full px-3 py-2 bg-[#FCF3E3]/30 border border-celeste/20 rounded-xl text-xs focus:outline-none focus:bg-white transition-colors">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1">主要廚具</label>
+                <select id="ai-preview-appliance" class="w-full px-2.5 py-2 bg-white border border-celeste/20 rounded-xl text-xs focus:outline-none">
+                  <option value="氣炸鍋">氣炸鍋</option>
+                  <option value="電鍋">電鍋</option>
+                  <option value="電磁爐">電磁爐</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-1">烹飪時間</label>
+                <input type="text" id="ai-preview-time" class="w-full px-3 py-2 bg-[#FCF3E3]/30 border border-celeste/20 rounded-xl text-xs focus:outline-none focus:bg-white transition-colors">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 mb-1">食譜一言描述</label>
+            <input type="text" id="ai-preview-description" class="w-full px-3 py-2 bg-[#FCF3E3]/30 border border-celeste/20 rounded-xl text-xs focus:outline-none focus:bg-white transition-colors">
+          </div>
+
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1">食材用量 (每行一個: 品項, 數量)</label>
+              <textarea id="ai-preview-ingredients" rows="3" class="w-full px-3 py-2 bg-[#FCF3E3]/30 border border-celeste/20 rounded-xl text-xs font-mono focus:outline-none focus:bg-white transition-all custom-scrollbar"></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1">製作步驟 (每行一項步驟)</label>
+              <textarea id="ai-preview-steps" rows="3" class="w-full px-3 py-2 bg-[#FCF3E3]/30 border border-celeste/20 rounded-xl text-xs font-mono focus:outline-none focus:bg-white transition-all custom-scrollbar"></textarea>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <button onclick="resetAiPreview()" class="px-4 py-2 border border-celeste/30 text-slate-400 rounded-xl text-xs font-bold active:scale-95 transition-all">
+              重新輸入
+            </button>
+            <button onclick="saveAiPreviewedRecipe()" class="px-5 py-2 bg-midnight text-lionsmane rounded-xl text-xs font-bold active:scale-95 transition-all flex items-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-floppy-disk"></i> 儲存至食譜
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SYSTEM SPECIFICATIONS -->
+    <section id="section-docs" class="hidden space-y-4 animate-in fade-in duration-200">
+      <!-- Spec Header -->
+      <div class="bg-midnight text-lionsmane p-6 rounded-2xl shadow-premium-card border border-midnight">
+        <h2 class="text-sm font-black tracking-tight flex items-center gap-1.5 font-serif">
+          <i class="fa-solid fa-file-invoice text-celeste"></i> 系統開發與結構文件
+        </h2>
+        <p class="text-[10px] text-celeste/85 leading-relaxed mt-1">
+          本區彙整系統資料庫欄位定義與軟體架構，供您在 GitHub Pages 說明或轉交後端研發部署時參考。
+        </p>
+      </div>
+
+      <!-- Feature specs list -->
+      <div class="bg-white p-5 rounded-2xl shadow-premium-card border border-celeste/20 space-y-3">
+        <h3 class="text-xs font-black text-midnight border-b border-slate-100 pb-2 uppercase tracking-wide">1. 功能清單 (Feature List)</h3>
+        <div class="grid grid-cols-1 gap-2.5 text-[11px] text-slate-600">
+          <div class="bg-[#FCF3E3]/30 p-3 rounded-xl border border-celeste/10">
+            <span class="font-bold text-midnight block">🍳 經典三大家電分類</span>
+            <p class="mt-0.5 text-slate-500 leading-relaxed">支持依據「氣炸鍋、電鍋、電磁爐」進行點選切換與清爽的 iOS 分段控制篩選。</p>
+          </div>
+          <div class="bg-[#FCF3E3]/30 p-3 rounded-xl border border-celeste/10">
+            <span class="font-bold text-midnight block">🪄 Gemini 連結解析轉換</span>
+            <p class="mt-0.5 text-slate-500 leading-relaxed">貼上網際網路上的烹調連結，由 AI 自然剖析切片成結構化的 JSON 資料。</p>
+          </div>
+          <div class="bg-[#FCF3E3]/30 p-3 rounded-xl border border-celeste/10">
+            <span class="font-bold text-midnight block">⏳ 多工備料與出爐計時</span>
+            <p class="mt-0.5 text-slate-500 leading-relaxed">具備食材勾選核取框，並提供整合式的 AudioContext 蜂鳴倒數定時器。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- DB schema spec -->
+      <div class="bg-white p-5 rounded-2xl shadow-premium-card border border-celeste/20 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+          <h3 class="text-xs font-black text-midnight uppercase tracking-wide">2. 資料表 Schema 設計</h3>
+          <button onclick="copyToClipboard('db-json-code')" class="text-[10px] text-midnight font-bold underline">複製 JSON</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-[10px] text-left">
+            <thead class="bg-[#FCF3E3]/50 text-midnight">
+              <tr>
+                <th class="px-2.5 py-2 font-bold border-b border-celeste/10">欄位</th>
+                <th class="px-2.5 py-2 font-bold border-b border-celeste/10">形態</th>
+                <th class="px-2.5 py-2 font-bold border-b border-celeste/10">備註</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-500">
+              <tr><td class="px-2.5 py-2 font-mono font-bold text-midnight">id</td><td class="px-2.5 py-2 font-mono">VARCHAR(36)</td><td class="px-2.5 py-2 text-slate-400">主鍵 Primary Key</td></tr>
+              <tr><td class="px-2.5 py-2 font-mono font-bold text-midnight">title</td><td class="px-2.5 py-2 font-mono">VARCHAR(100)</td><td class="px-2.5 py-2 text-slate-400">名稱 NOT NULL</td></tr>
+              <tr><td class="px-2.5 py-2 font-mono font-bold text-midnight">appliance</td><td class="px-2.5 py-2 font-mono">VARCHAR(20)</td><td class="px-2.5 py-2 text-slate-400">廚具篩選分類</td></tr>
+              <tr><td class="px-2.5 py-2 font-mono font-bold text-midnight">ingredients</td><td class="px-2.5 py-2 font-mono">JSON</td><td class="px-2.5 py-2 text-slate-400">食材名與分量</td></tr>
+              <tr><td class="px-2.5 py-2 font-mono font-bold text-midnight">steps</td><td class="px-2.5 py-2 font-mono">JSON</td><td class="px-2.5 py-2 text-slate-400">工序步驟陣列</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="hidden" id="db-json-code">{"id":"UUID","title":"string","appliance":"氣炸鍋|電鍋|電磁爐","cookTime":"string","ingredients":[{"name":"string","amount":"string"}],"steps":["string"]}</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- iOS STICKY BOTTOM TAB BAR (Backdrop blurred cream glass design) -->
+  <div class="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-lg border-t border-celeste/20 py-2.5 pb-safe-bottom flex justify-around items-center z-40 md:hidden shadow-premium-nav">
+    <!-- Recipes Page Button -->
+    <button onclick="switchTab('recipes')" id="mobile-tab-recipes" class="mobile-tab-btn flex flex-col items-center gap-1 text-midnight active:scale-95 transition-all">
+      <div class="w-12 h-6 flex items-center justify-center rounded-full bg-midnight/10">
+        <i class="fa-solid fa-book-open text-[11px]"></i>
+      </div>
+      <span class="text-[9px] font-black">我的食譜</span>
+    </button>
+    <!-- AI URL Import Button -->
+    <button onclick="switchTab('ai-import')" id="mobile-tab-ai-import" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-95 transition-all">
+      <div class="w-12 h-6 flex items-center justify-center rounded-full">
+        <i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i>
+      </div>
+      <span class="text-[9px] font-bold">AI 匯入</span>
+    </button>
+    <!-- Specifications Docs Button -->
+    <button onclick="switchTab('docs')" id="mobile-tab-docs" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-95 transition-all">
+      <div class="w-12 h-6 flex items-center justify-center rounded-full">
+        <i class="fa-solid fa-file-invoice text-[11px]"></i>
+      </div>
+      <span class="text-[9px] font-bold">規格書</span>
+    </button>
+  </div>
+
+
+  <!-- iOS PREMIUM SLIDE-UP RECIPE DETAIL MODAL (Bottom Sheet style for Mobile) -->
+  <div id="recipe-detail-modal" class="hidden fixed inset-0 bg-midnight/25 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+    <!-- Backdrop dismisser -->
+    <div class="absolute inset-0 z-0" onclick="closeRecipeDetailModal()"></div>
+
+    <div class="bg-white rounded-t-3xl md:rounded-2xl max-w-xl w-full max-h-[88vh] md:max-h-[85vh] flex flex-col shadow-premium-sheet overflow-hidden ios-modal-transition translate-y-full z-10 relative border-t md:border border-celeste/20">
+      <!-- iOS Drag Indicator Pill -->
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 md:hidden"></div>
+      
+      <!-- Detent Header Info -->
+      <div class="px-5 pb-4 pt-1.5 md:pt-5 border-b border-celeste/10 flex items-start justify-between bg-[#FCF3E3]/40">
+        <div>
+          <span id="modal-recipe-appliance" class="inline-block px-2.5 py-0.5 text-[9px] font-black rounded-full mb-1 border uppercase tracking-wider"></span>
+          <h3 id="modal-recipe-title" class="text-base font-bold text-midnight font-serif"></h3>
+          <p id="modal-recipe-description" class="text-[11px] text-slate-400 mt-1 leading-relaxed"></p>
+        </div>
+        <!-- Native Style Round Close Button -->
+        <button onclick="closeRecipeDetailModal()" class="w-6 h-6 rounded-full bg-white hover:bg-slate-50 flex items-center justify-center text-slate-400 border border-celeste/20 active:scale-90 shadow-sm">
+          <i class="fa-solid fa-xmark text-[10px]"></i>
+        </button>
+      </div>
+
+      <!-- Detent Scrollable content -->
+      <div class="p-5 overflow-y-auto flex-grow space-y-4 custom-scrollbar">
+        <!-- Cook stats info banner -->
+        <div class="flex items-center gap-5 text-xs text-slate-500 bg-[#FCF3E3]/30 p-3 rounded-xl border border-celeste/15">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-regular fa-clock text-marigold"></i>
+            <span>烹調時間：<strong id="modal-recipe-time" class="text-midnight"></strong></span>
+          </div>
+          <div class="flex items-center gap-1.5" id="modal-recipe-link-wrapper">
+            <i class="fa-solid fa-link text-celeste"></i>
+            <a href="#" id="modal-recipe-link" target="_blank" class="text-midnight underline font-semibold hover:text-midnight/80 transition-colors">檢視外部食譜網頁</a>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-5">
+          <!-- Ingredients Checklist (2/5) -->
+          <div class="md:col-span-2 space-y-2.5">
+            <h4 class="text-xs font-bold text-midnight flex items-center gap-1.5 tracking-wide">
+              <i class="fa-solid fa-clipboard-list text-celeste"></i> 1. 食材與調味備料
+            </h4>
+            <div id="modal-recipe-ingredients" class="space-y-1 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+              <!-- Check list -->
+            </div>
+          </div>
+
+          <!-- Steps Progress Container (3/5) -->
+          <div class="md:col-span-3 space-y-2.5">
+            <h4 class="text-xs font-bold text-midnight flex items-center gap-1.5 tracking-wide">
+              <i class="fa-solid fa-list-ol text-celeste"></i> 2. 烹調步驟指引
+            </h4>
+            <div id="modal-recipe-steps" class="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+              <!-- Steps -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Bottom Actions & Cooking timer -->
+      <div class="p-4 border-t border-slate-100 bg-white/90 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-safe-bottom md:pb-4">
+        <!-- Interactive Timer Panel -->
+        <div class="flex items-center gap-2.5 bg-[#FCF3E3]/40 px-3 py-2 rounded-xl border border-celeste/20 w-full sm:w-auto shadow-sm">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-stopwatch text-marigold"></i>
+            <span class="text-[9px] font-black text-midnight tracking-wider uppercase">智慧定時</span>
+          </div>
+          <div class="h-3 w-px bg-slate-200"></div>
+          <div class="flex items-center gap-1.5 flex-grow">
+            <input type="number" id="timer-minutes" min="1" max="99" value="5" class="w-7 text-center border-b border-celeste focus:outline-none focus:border-midnight font-bold text-slate-800 text-xs">
+            <span class="text-[10px] font-bold text-slate-400">分</span>
+            <button onclick="toggleCookingTimer()" id="btn-timer-trigger" class="ml-1 px-3.5 py-1 bg-midnight hover:bg-midnight/90 text-lionsmane rounded-lg text-[10px] font-bold transition-all active:scale-95">
+              啟動
+            </button>
+            <span id="timer-display" class="hidden text-xs font-black text-marigold animate-pulse ml-auto bg-marigold/10 px-2.5 py-0.5 rounded-md">00:00</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 w-full sm:w-auto justify-end">
+          <button onclick="editRecipeFromModal()" class="flex-1 sm:flex-none px-4 py-2 border border-celeste text-midnight hover:bg-[#FCF3E3]/50 rounded-xl text-xs font-bold transition-all active:scale-95">
+            編輯
+          </button>
+          <button onclick="deleteRecipeFromModal()" class="flex-1 sm:flex-none px-4 py-2 border border-red-100 text-red-500 hover:bg-red-50 rounded-xl text-xs font-bold transition-all active:scale-95">
+            刪除
+          </button>
+          <button onclick="closeRecipeDetailModal()" class="flex-1 sm:flex-none px-5 py-2 bg-midnight hover:bg-midnight/90 text-lionsmane rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md">
+            料理完成
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- iOS PREMIUM MANUAL RECIPE SHEET -->
+  <div id="manual-recipe-modal" class="hidden fixed inset-0 bg-midnight/25 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+    <!-- Backdrop dismisser -->
+    <div class="absolute inset-0 z-0" onclick="closeManualRecipeModal()"></div>
+
+    <div class="bg-white rounded-t-3xl md:rounded-2xl max-w-xl w-full max-h-[85vh] md:max-h-[80vh] flex flex-col shadow-premium-sheet overflow-hidden ios-modal-transition translate-y-full z-10 relative border-t md:border border-celeste/20">
+      <!-- iOS Drag Indicator Pill -->
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 md:hidden"></div>
+
+      <div class="p-4 border-b border-celeste/10 flex items-center justify-between bg-[#FCF3E3]/40">
+        <h3 class="text-sm font-bold text-midnight flex items-center gap-1.5 uppercase tracking-wide font-serif">
+          <i class="fa-solid fa-utensils text-marigold"></i> <span id="manual-modal-header-title">手動新增食譜</span>
+        </h3>
+        <button onclick="closeManualRecipeModal()" class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-slate-400 border border-celeste/10 active:scale-90 transition-all shadow-sm">
+          <i class="fa-solid fa-xmark text-[10px]"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-grow space-y-3.5 custom-scrollbar">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 mb-1">食譜標題 *</label>
+            <input type="text" id="manual-title" placeholder="例如：黃金蒜香豆腐" class="w-full px-3 py-2 bg-[#FCF3E3]/20 border border-celeste/15 rounded-xl text-xs font-medium focus:outline-none focus:bg-white transition-colors">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1">主要家電 *</label>
+              <select id="manual-appliance" class="w-full px-2.5 py-1.5 bg-white border border-celeste/20 rounded-xl text-xs focus:outline-none">
+                <option value="氣炸鍋">氣炸鍋</option>
+                <option value="電鍋">電鍋</option>
+                <option value="電磁爐">電磁爐</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-400 mb-1">烹飪時間</label>
+              <input type="text" id="manual-cooktime" placeholder="例如：12 分鐘" class="w-full px-3 py-2 bg-[#FCF3E3]/20 border border-celeste/15 rounded-xl text-xs font-medium focus:outline-none focus:bg-white transition-colors">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 mb-1">食譜一言簡介</label>
+          <input type="text" id="manual-description" placeholder="這道料理非常好吃，簡單快速..." class="w-full px-3 py-2 bg-[#FCF3E3]/20 border border-celeste/15 rounded-xl text-xs font-medium focus:outline-none focus:bg-white transition-colors">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 mb-1">食材明細 (格式：品項, 分量。每行一筆)</label>
+          <textarea id="manual-ingredients" rows="3" placeholder="有機豆腐, 1 盒&#10;蔥花, 1 把&#10;黑胡椒鹽, 少許" class="w-full px-3 py-2 bg-[#FCF3E3]/20 border border-celeste/15 rounded-xl text-xs font-mono focus:outline-none focus:bg-white transition-all custom-scrollbar"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 mb-1">烹飪步驟工序 (每行一筆步驟說明)</label>
+          <textarea id="manual-steps" rows="3" placeholder="將豆腐切塊，瀝乾表面水分。&#10;放入氣炸鍋噴點食用油，180度烤10分鐘。&#10;起鍋前拌入蔥花與椒鹽即可享用。" class="w-full px-3 py-2 bg-[#FCF3E3]/20 border border-celeste/15 rounded-xl text-xs font-mono focus:outline-none focus:bg-white transition-all custom-scrollbar"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-white flex justify-end gap-2.5 pb-safe-bottom md:pb-4">
+        <button onclick="closeManualRecipeModal()" class="px-4 py-2 border border-celeste/35 text-slate-400 rounded-xl text-xs font-bold active:scale-95 transition-all">
+          取消
+        </button>
+        <button onclick="saveManualRecipe()" class="px-5 py-2 bg-midnight hover:bg-midnight/90 text-lionsmane rounded-xl text-xs font-bold active:scale-95 transition-all shadow-md">
+          確認儲存
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Core App Logic -->
+  <script>
+    const apiKey = ""; // Google Gemini 2.5 Dynamic API Key Context
+    let recipes = [];
+    let activeCategory = '全部';
+    let currentViewingRecipeId = null;
+    let cookingCountdownInterval = null;
+    let editingRecipeId = null;
+
+    // Default Premium Recipes matched strictly with user's gorgeous colors (Midnight, Lionsmane, Herb, Marigold, Celeste)
+    const defaultRecipes = [
+      {
+        id: "premium-fryer-1",
+        title: "金黃椒鹽香酥脆雞翅",
+        appliance: "氣炸鍋",
+        cookTime: "15 分鐘",
+        description: "高溫熱對流烘烤出如油炸般的外殼！一口咬下鮮嫩多汁，減油 80% 無負擔！",
+        sourceUrl: "https://icook.tw/recipes/384210",
+        ingredients: [
+          { name: "新鮮土雞翅", amount: "6 隻" },
+          { name: "大蒜瓣 (拍扁壓碎)", amount: "4 瓣" },
+          { name: "純香黑胡椒粒", amount: "1.5 茶匙" },
+          { name: "經典蒜香椒鹽粉", amount: "1 茶匙" },
+          { name: "純釀生抽與米酒", amount: "各 1 大匙" }
+        ],
+        steps: [
+          "雞翅充分洗淨瀝乾，用廚房紙巾拍乾表面，避免水分引發過多蒸氣影響酥脆度。",
+          "加入碎蒜瓣、生抽、米酒與黑胡椒揉捏，置於冰箱中醃漬靜置 20 分鐘使其入味。",
+          "在氣炸鍋內鋪上烘焙紙，將雞翅皮朝上整齊碼放好，設定 180 度氣炸烤 10 分鐘。",
+          "拉出烤網翻面，均勻撒上特製椒鹽，並將溫度調高至 200 度，最後氣炸 5 分鐘烤出金黃色外殼即可。"
+        ],
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "premium-cooker-1",
+        title: "古早味滑雞香菇燜飯",
+        appliance: "電鍋",
+        cookTime: "35 分鐘",
+        description: "一鍋到底，白米飯完全吸附老薑、香菇與土雞油脂，每一口都是綿密溫潤的傳統風味。",
+        sourceUrl: "https://icook.tw/recipes/398112",
+        ingredients: [
+          { name: "大甲綿密芋頭 (切丁)", amount: "100 克" },
+          { name: "新社冬菇 (泡軟切細絲)", amount: "5 朵" },
+          { name: "去骨放山雞腿肉", amount: "250 克" },
+          { name: "一等優質壽司白米", amount: "1.5 杯" },
+          { name: "老薑絲與精純麻油", amount: "適量" }
+        ],
+        steps: [
+          "白米洗淨後瀝乾水。乾香菇泡軟洗淨、香菇水留下備用。雞肉切成易入口大小。",
+          "平底鍋倒入麻油爆香薑絲、香菇絲與芋頭丁。再將雞肉塊皮朝下，中火煸炒到表面稍微斷生、溢出雞油。",
+          "將白米與炒鍋中所有配料倒入電鍋內鍋中。加入一杯半的泡香菇高湯及一匙生抽醬油拌勻。",
+          "電鍋外鍋倒入 1.2 杯水，放好內鍋，按下啟動開關開始蒸燜煮。",
+          "開關跳起後，維持在密封不洩氣狀態「續燜 15 分鐘」，隨後開蓋用飯匙輕輕由下往上翻動均勻拌香即可。"
+        ],
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "premium-stove-1",
+        title: "日式鮮香昆布豆腐肥牛鍋",
+        appliance: "電磁爐",
+        cookTime: "20 分鐘",
+        description: "昆布湯底散發甘醇甜味，加上鮮綠葉香蔬菜與大白菜，暖呼呼的桌邊即時烹調首選。",
+        sourceUrl: "https://icook.tw/recipes/321852",
+        ingredients: [
+          { name: "特選雪花肥牛肉片", amount: "250 克" },
+          { name: "大白菜 (切段)", amount: "1/4 顆" },
+          { name: "老街手工板豆腐", amount: "1 盒" },
+          { name: "鮮甜大蔥段及香菇", amount: "各少許" },
+          { name: "特調壽喜醬汁 (日式醬油與味醂)", amount: "150 cc" }
+        ],
+        steps: [
+          "電磁爐調整為中火，取鑄鐵淺鍋，抹上微量食用油爆香大蔥段、洋蔥絲。",
+          "鋪入 2 片肥牛肉片煎炒到微焦鎖香，隨後淋上特調的日式壽喜調味醬汁煮開。",
+          "將板豆腐（表面可稍微煎上色）切大塊，大白菜、香菇整齊碼放在鍋底慢火燉煮 10 分鐘，釋放大白菜甘甜高湯。",
+          "再次涮入牛肉片，待牛肉由紅轉嫩褐色即可隨時在桌邊熱騰騰享用。"
+        ],
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    window.onload = function() {
+      const stored = localStorage.getItem('smart_kitchen_recipes');
+      if (stored) {
+        recipes = JSON.parse(stored);
+      } else {
+        recipes = defaultRecipes;
+        localStorage.setItem('smart_kitchen_recipes', JSON.stringify(recipes));
+      }
+      renderRecipes();
+    }
+
+    // --- Tab Switcher Logic with proper style mapping ---
+    function switchTab(tabName) {
+      document.getElementById('section-recipes').classList.add('hidden');
+      document.getElementById('section-ai-import').classList.add('hidden');
+      document.getElementById('section-docs').classList.add('hidden');
+
+      // Reset desktop styles
+      const desktopTabs = document.querySelectorAll('.desktop-tab-btn');
+      desktopTabs.forEach(t => {
+        t.className = "desktop-tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-midnight";
+      });
+
+      // Reset mobile tab styles
+      const mobileTabs = document.querySelectorAll('.mobile-tab-btn');
+      mobileTabs.forEach(t => {
+        t.className = "mobile-tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-95 transition-all";
+        t.querySelector('div').className = "w-12 h-6 flex items-center justify-center rounded-full";
+      });
+
+      // Show requested tab
+      document.getElementById(`section-${tabName}`).classList.remove('hidden');
+
+      // Sync active states
+      const desktopActive = document.getElementById(`desktop-tab-${tabName}`);
+      if (desktopActive) {
+        desktopActive.className = "desktop-tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all bg-white text-midnight shadow-sm border border-celeste/10";
+      }
+
+      const mobileActive = document.getElementById(`mobile-tab-${tabName}`);
+      if (mobileActive) {
+        mobileActive.className = "mobile-tab-btn flex flex-col items-center gap-1 text-midnight active:scale-95 transition-all";
+        mobileActive.querySelector('div').className = "w-12 h-6 flex items-center justify-center rounded-full bg-midnight/10";
+      }
+
+      if (tabName === 'recipes') {
+        renderRecipes();
+      }
+    }
+
+    // iOS Slide Up Bottom Sheet transitions
+    function openRecipeDetailModal(recipeId) {
+      const recipe = recipes.find(r => r.id === recipeId);
+      if (!recipe) return;
+
+      currentViewingRecipeId = recipeId;
+      document.getElementById('modal-recipe-title').innerText = recipe.title;
+      document.getElementById('modal-recipe-description').innerText = recipe.description || '';
+      document.getElementById('modal-recipe-time').innerText = recipe.cookTime || '15-20 分鐘';
+
+      // Appliance Badge Styling
+      const appBadge = document.getElementById('modal-recipe-appliance');
+      appBadge.innerText = recipe.appliance;
+      appBadge.className = "inline-block px-2.5 py-0.5 text-[9px] font-black rounded-full mb-1 border uppercase tracking-wider";
+      if (recipe.appliance === '氣炸鍋') {
+        appBadge.classList.add('bg-marigold/10', 'text-midnight', 'border-marigold/30');
+      } else if (recipe.appliance === '電鍋') {
+        appBadge.classList.add('bg-celeste/20', 'text-midnight', 'border-celeste/45');
+      } else {
+        appBadge.classList.add('bg-herb/10', 'text-herb', 'border-herb/30');
+      }
+
+      // External source check
+      const linkWrapper = document.getElementById('modal-recipe-link-wrapper');
+      const linkElem = document.getElementById('modal-recipe-link');
+      if (recipe.sourceUrl && recipe.sourceUrl.startsWith('http')) {
+        linkWrapper.classList.remove('hidden');
+        linkElem.href = recipe.sourceUrl;
+      } else {
+        linkWrapper.classList.add('hidden');
+      }
+
+      // Check lists rendering with nice touch targets
+      const ingCont = document.getElementById('modal-recipe-ingredients');
+      ingCont.innerHTML = '';
+      recipe.ingredients.forEach((ing, index) => {
+        const item = document.createElement('label');
+        item.className = "flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#FCF3E3]/40 border border-transparent hover:border-celeste/10 transition-all cursor-pointer text-xs";
+        item.innerHTML = `
+          <input type="checkbox" onchange="toggleIngredientLine(this)" class="w-4 h-4 text-midnight rounded border-celeste focus:ring-midnight bg-[#FCF3E3]/20">
+          <span class="text-slate-700 font-semibold transition-all duration-200">${escapeHtml(ing.name)}</span>
+          <span class="ml-auto text-slate-400 font-mono text-[11px] font-bold">${escapeHtml(ing.amount)}</span>
+        `;
+        ingCont.appendChild(item);
+      });
+
+      // Step render flow
+      const stepsCont = document.getElementById('modal-recipe-steps');
+      stepsCont.innerHTML = '';
+      recipe.steps.forEach((step, index) => {
+        const item = document.createElement('div');
+        item.className = "flex items-start gap-3 p-3.5 bg-[#FCF3E3]/20 rounded-xl border border-celeste/10";
+        item.innerHTML = `
+          <span class="w-5.5 h-5.5 rounded-full bg-midnight text-lionsmane flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5 shadow-sm">${index + 1}</span>
+          <p class="text-xs text-slate-700 leading-relaxed font-medium">${escapeHtml(step)}</p>
+        `;
+        stepsCont.appendChild(item);
+      });
+
+      // Detent open animation with beautiful timing
+      const modal = document.getElementById('recipe-detail-modal');
+      const inner = modal.querySelector('.ios-modal-transition');
+      modal.classList.remove('hidden');
+      
+      // Delay to trigger browser layout reflow before sliding up
+      setTimeout(() => {
+        inner.classList.remove('translate-y-full');
+      }, 50);
+    }
+
+    function closeRecipeDetailModal() {
+      const modal = document.getElementById('recipe-detail-modal');
+      const inner = modal.querySelector('.ios-modal-transition');
+      inner.classList.add('translate-y-full');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    function toggleIngredientLine(chk) {
+      const textSpan = chk.nextElementSibling;
+      if (chk.checked) {
+        textSpan.className = "text-slate-400 line-through font-semibold transition-all duration-200";
+      } else {
+        textSpan.className = "text-slate-700 font-semibold transition-all duration-200";
+      }
+    }
+
+    // iOS style search bar focus behavior
+    function focusSearchBar() {
+      document.getElementById('search-cancel-btn').classList.remove('hidden');
+    }
+
+    // iOS style search bar blur behavior
+    function blurSearchBar() {
+      const input = document.getElementById('recipe-search');
+      if (!input.value.trim()) {
+        document.getElementById('search-cancel-btn').classList.add('hidden');
+      }
+    }
+
+    // Clear and reset search bar behaviors
+    function cancelSearchMode() {
+      const input = document.getElementById('recipe-search');
+      input.value = '';
+      document.getElementById('search-cancel-btn').classList.add('hidden');
+      document.getElementById('btn-search-clear').classList.add('hidden');
+      renderRecipes();
+    }
+
+    function clearSearchInput() {
+      document.getElementById('recipe-search').value = '';
+      document.getElementById('btn-search-clear').classList.add('hidden');
+      renderRecipes();
+    }
+
+    function searchRecipes() {
+      const q = document.getElementById('recipe-search').value.trim();
+      const clearBtn = document.getElementById('btn-search-clear');
+      if (q) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderRecipes();
+    }
+
+    // Render Premium Cards
+    function renderRecipes() {
+      const grid = document.getElementById('recipes-grid');
+      const emptyState = document.getElementById('recipes-empty-state');
+      grid.innerHTML = '';
+
+      let filtered = recipes;
+      if (activeCategory !== '全部') {
+        filtered = recipes.filter(r => r.appliance === activeCategory);
+      }
+
+      // Keyword matching
+      const query = document.getElementById('recipe-search').value.trim().toLowerCase();
+      if (query) {
+        filtered = filtered.filter(r => 
+          r.title.toLowerCase().includes(query) || 
+          r.description.toLowerCase().includes(query) ||
+          r.ingredients.some(i => i.name.toLowerCase().includes(query))
+        );
+      }
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.classList.remove('hidden');
+
+      filtered.forEach(recipe => {
+        let badgeColor = '';
+        let icon = '';
+        
+        if (recipe.appliance === '氣炸鍋') {
+          badgeColor = 'bg-marigold/10 text-midnight border-marigold/20';
+          icon = '<i class="fa-solid fa-wind text-marigold mr-1"></i>';
+        } else if (recipe.appliance === '電鍋') {
+          badgeColor = 'bg-celeste/20 text-midnight border-celeste/30';
+          icon = '<i class="fa-solid fa-circle-radiation text-midnight/70 mr-1 animate-spin-slow"></i>';
+        } else {
+          badgeColor = 'bg-herb/10 text-herb border-herb/25';
+          icon = '<i class="fa-solid fa-bolt text-[#708C69] mr-1"></i>';
+        }
+
+        const ingredientsCount = recipe.ingredients ? recipe.ingredients.length : 0;
+        const stepsCount = recipe.steps ? recipe.steps.length : 0;
+
+        const card = document.createElement('div');
+        // Rounded Editorial Card with luxury shadow, crisp thin border and smooth scaling feedback
+        card.className = "bg-white border border-celeste/20 rounded-2xl shadow-premium-card overflow-hidden cursor-pointer flex flex-col justify-between transform active:scale-[0.97] active:opacity-90 hover:shadow-premium-hover hover:border-celeste/40 transition-all duration-300";
+        card.onclick = () => openRecipeDetailModal(recipe.id);
+        card.innerHTML = `
+          <div class="p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="px-2.5 py-0.5 border text-[9px] font-black rounded-full uppercase tracking-wider ${badgeColor}">
+                ${icon} ${recipe.appliance}
+              </span>
+              <span class="text-[10px] font-black text-slate-400 flex items-center gap-1.5">
+                <i class="fa-regular fa-clock text-marigold"></i> ${recipe.cookTime || '15分'}
+              </span>
+            </div>
+            <div class="space-y-1">
+              <h3 class="text-[15px] font-bold text-midnight tracking-tight font-serif">${escapeHtml(recipe.title)}</h3>
+              <p class="text-[11px] text-slate-400 leading-relaxed line-clamp-2">${escapeHtml(recipe.description || '無描述簡介')}</p>
+            </div>
+          </div>
+          <div class="px-5 py-3 bg-[#FCF3E3]/20 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+            <span>備料 <strong class="text-midnight">${ingredientsCount}</strong> 品</span>
+            <span>步驟 <strong class="text-midnight">${stepsCount}</strong> 段</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterRecipes(category) {
+      activeCategory = category;
+      const pills = document.querySelectorAll('.filter-pill');
+      pills.forEach(p => {
+        if (p.getAttribute('data-appliance') === category) {
+          p.className = "filter-pill flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all duration-300 bg-white text-midnight shadow-sm border border-celeste/10";
+        } else {
+          p.className = "filter-pill flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all duration-300 text-slate-500 hover:text-midnight";
+        }
+      });
+      renderRecipes();
+    }
+
+    // Managing Interactive Cook Timer and sound effects
+    function toggleCookingTimer() {
+      const display = document.getElementById('timer-display');
+      const widget = document.getElementById('active-timer-widget');
+      const widgetDisplay = document.getElementById('widget-timer-display');
+      const btn = document.getElementById('btn-timer-trigger');
+      
+      if (cookingCountdownInterval) {
+        clearInterval(cookingCountdownInterval);
+        cookingCountdownInterval = null;
+        display.classList.add('hidden');
+        widget.classList.add('hidden');
+        btn.innerText = '啟動';
+        showToast('🛑 計時倒數已手動中止');
+        return;
+      }
+
+      const inputMin = parseInt(document.getElementById('timer-minutes').value) || 5;
+      let totalSeconds = inputMin * 60;
+
+      display.classList.remove('hidden');
+      widget.classList.remove('hidden');
+      btn.innerText = '停止';
+      showToast(`⏳ ${inputMin} 分鐘背景計時已啟動！`);
+
+      cookingCountdownInterval = setInterval(() => {
+        if (totalSeconds <= 0) {
+          clearInterval(cookingCountdownInterval);
+          cookingCountdownInterval = null;
+          display.innerHTML = '🔔 時間到！';
+          widget.classList.add('hidden');
+          btn.innerText = '啟動';
+          showToast('🎉 香氣溢出！廚具指定烹調時間已結束！');
+          playTimerAlertBeep();
+          return;
+        }
+
+        totalSeconds--;
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        display.innerText = timeStr;
+        widgetDisplay.innerText = timeStr;
+      }, 1000);
+    }
+
+    // Apple Style culinary beep warning using Web Audio API
+    function playTimerAlertBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(987.77, audioCtx.currentTime); // High pitch notification beep
+        gain.gain.setValueAtTime(1, audioCtx.currentTime);
+        osc.start();
+        setTimeout(() => {
+          osc.stop();
+        }, 1200);
+      } catch (e) {
+        console.log("Audio warning block prevented.");
+      }
+    }
+
+    // --- MANUAL ADD/EDIT MODAL LOGIC ---
+    function openManualRecipeModal(recipeId = null) {
+      const modal = document.getElementById('manual-recipe-modal');
+      const inner = modal.querySelector('.ios-modal-transition');
+      
+      if (recipeId) {
+        editingRecipeId = recipeId;
+        document.getElementById('manual-modal-header-title').innerText = '編輯食譜';
+        
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (recipe) {
+          document.getElementById('manual-title').value = recipe.title || '';
+          document.getElementById('manual-appliance').value = recipe.appliance || '氣炸鍋';
+          document.getElementById('manual-cooktime').value = recipe.cookTime || '';
+          document.getElementById('manual-description').value = recipe.description || '';
+          
+          const ingredientsText = recipe.ingredients ? recipe.ingredients.map(i => `${i.name}, ${i.amount}`).join('\n') : '';
+          document.getElementById('manual-ingredients').value = ingredientsText;
+          
+          const stepsText = recipe.steps ? recipe.steps.join('\n') : '';
+          document.getElementById('manual-steps').value = stepsText;
+        }
+      } else {
+        editingRecipeId = null;
+        document.getElementById('manual-modal-header-title').innerText = '手動新增食譜';
+        
+        document.getElementById('manual-title').value = '';
+        document.getElementById('manual-cooktime').value = '';
+        document.getElementById('manual-description').value = '';
+        document.getElementById('manual-ingredients').value = '';
+        document.getElementById('manual-steps').value = '';
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        inner.classList.remove('translate-y-full');
+      }, 50);
+    }
+
+    function closeManualRecipeModal() {
+      const modal = document.getElementById('manual-recipe-modal');
+      const inner = modal.querySelector('.ios-modal-transition');
+      inner.classList.add('translate-y-full');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        editingRecipeId = null;
+        // Reset manual modal form
+        document.getElementById('manual-title').value = '';
+        document.getElementById('manual-cooktime').value = '';
+        document.getElementById('manual-description').value = '';
+        document.getElementById('manual-ingredients').value = '';
+        document.getElementById('manual-steps').value = '';
+      }, 300);
+    }
+
+    function saveManualRecipe() {
+      const title = document.getElementById('manual-title').value.trim();
+      const appliance = document.getElementById('manual-appliance').value;
+      const cookTime = document.getElementById('manual-cooktime').value.trim() || '15 分鐘';
+      const description = document.getElementById('manual-description').value.trim();
+      const ingredientsText = document.getElementById('manual-ingredients').value.trim();
+      const stepsText = document.getElementById('manual-steps').value.trim();
+
+      if (!title) {
+        showToast('⚠️ 請至少輸入食譜標題！', 'error');
+        return;
+      }
+
+      const ingredients = ingredientsText.split('\n').filter(l => l.trim()).map(line => {
+        const parts = line.split(',');
+        return {
+          name: parts[0] ? parts[0].trim() : line.trim(),
+          amount: parts[1] ? parts[1].trim() : '適量'
+        }
+      });
+
+      const steps = stepsText.split('\n').filter(l => l.trim()).map(line => line.trim());
+
+      if (editingRecipeId) {
+        const idx = recipes.findIndex(r => r.id === editingRecipeId);
+        if (idx !== -1) {
+          recipes[idx].title = title;
+          recipes[idx].appliance = appliance;
+          recipes[idx].cookTime = cookTime;
+          recipes[idx].description = description;
+          recipes[idx].ingredients = ingredients.length > 0 ? ingredients : [{ name: '新鮮食材', amount: '隨心意' }];
+          recipes[idx].steps = steps.length > 0 ? steps : ['放置廚具中，點擊定時啟動烹製。'];
+          
+          localStorage.setItem('smart_kitchen_recipes', JSON.stringify(recipes));
+          closeManualRecipeModal();
+          renderRecipes();
+          // Real-time re-open updated detail for excellent UX
+          openRecipeDetailModal(editingRecipeId);
+          showToast('📝 食譜修改已成功儲存！');
+        }
+      } else {
+        const newRecipe = {
+          id: 'user-recipe-' + Date.now(),
+          title,
+          appliance,
+          cookTime,
+          description,
+          sourceUrl: '',
+          ingredients: ingredients.length > 0 ? ingredients : [{ name: '新鮮食材', amount: '隨心意' }],
+          steps: steps.length > 0 ? steps : ['放置廚具中，點擊定時啟動烹製。'],
+          createdAt: new Date().toISOString()
+        };
+
+        recipes.unshift(newRecipe);
+        localStorage.setItem('smart_kitchen_recipes', JSON.stringify(recipes));
+        closeManualRecipeModal();
+        renderRecipes();
+        showToast('🍳 成功建立您的自訂食譜！');
+      }
+    }
+
+    function editRecipeFromModal() {
+      if (!currentViewingRecipeId) return;
+      closeRecipeDetailModal();
+      setTimeout(() => {
+        openManualRecipeModal(currentViewingRecipeId);
+      }, 350); // wait for smooth bottom sheet slide-down before opening editor
+    }
+
+    async function deleteRecipeFromModal() {
+      if (!currentViewingRecipeId) return;
+      const isConfirmed = await showIosConfirm('確認刪除食譜？', '此動作將永久移除此食譜紀錄，本機儲存資料將一併被清理。', '確認刪除', true);
+      
+      if (isConfirmed) {
+        recipes = recipes.filter(r => r.id !== currentViewingRecipeId);
+        localStorage.setItem('smart_kitchen_recipes', JSON.stringify(recipes));
+        closeRecipeDetailModal();
+        renderRecipes();
+        showToast('🗑️ 食譜已成功刪除');
+      }
+    }
+
+    // iOS style custom confirmation alert handler
+    function showIosConfirm(title, message, actionText = '確認', isDestructive = true) {
+      return new Promise((resolve) => {
+        const dialog = document.getElementById('ios-confirm-dialog');
+        const content = document.getElementById('ios-confirm-content');
+        
+        document.getElementById('ios-confirm-title').innerText = title;
+        document.getElementById('ios-confirm-message').innerText = message;
+        
+        const actionBtn = document.getElementById('ios-confirm-action');
+        actionBtn.innerText = actionText;
+        if (isDestructive) {
+          actionBtn.className = "py-3 font-bold text-red-500 active:bg-red-50/50 transition-colors";
+        } else {
+          actionBtn.className = "py-3 font-bold text-midnight active:bg-slate-50 transition-colors";
+        }
+
+        // Display Dialog
+        dialog.classList.remove('hidden');
+        setTimeout(() => content.classList.remove('scale-90'), 10);
+
+        const onDismiss = (confirmed) => {
+          content.classList.add('scale-90');
+          dialog.classList.add('hidden');
+          resolve(confirmed);
+        };
+
+        document.getElementById('ios-confirm-cancel').onclick = () => onDismiss(false);
+        actionBtn.onclick = () => onDismiss(true);
+      });
+    }
+
+    // AI Content import & extraction
+    async function startAiImport() {
+      const urlInput = document.getElementById('ai-import-url').value.trim();
+      if (!urlInput) {
+        showToast('⚠️ 請填寫食譜網址或關鍵字！', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btn-ai-submit');
+      const origBtnContent = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-marigold"></i>`;
+
+      document.getElementById('ai-empty-preview-state').classList.add('hidden');
+      document.getElementById('ai-result-form').classList.add('hidden');
+      document.getElementById('ai-loading-state').classList.remove('hidden');
+
+      try {
+        const promptText = `請分析此食譜主題或連結：「${urlInput}」。
+          若是網址請利用 Google 搜尋工具爬取並抓取結構。若是名詞或食材關鍵字，則產生氣炸鍋、電鍋或電磁爐之對應正宗做法。
+          選取單一最適合家電：「氣炸鍋」、「電鍋」、「電磁爐」。
+          將結構轉換成正體中文 JSON。欄位：title, appliance, cookTime, description, ingredients (由 name 和 amount 組成之物件陣列), steps (詳細工序步驟字串陣列)。`;
+
+        const payload = {
+          contents: [{ parts: [{ text: promptText }] }],
+          tools: [{ "google_search": {} }],
+          systemInstruction: {
+            parts: [{ text: "你是一位精通氣炸鍋、電鍋與電磁爐料理的廚藝大師。請精確提煉食譜要素，傳回嚴格且乾淨的正體中文 JSON。" }]
+          },
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                appliance: { type: "STRING", description: "限選'氣炸鍋'、'電鍋'、'電磁爐'其中之一" },
+                cookTime: { type: "STRING" },
+                description: { type: "STRING" },
+                ingredients: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      name: { type: "STRING" },
+                      amount: { type: "STRING" }
+                    },
+                    required: ["name", "amount"]
+                  }
+                },
+                steps: {
+                  type: "ARRAY",
+                  items: { type: "STRING" }
+                }
+              },
+              required: ["title", "appliance", "cookTime", "description", "ingredients", "steps"]
+            }
+          }
+        };
+
+        const parsedResult = await fetchGeminiWithBackoff(payload);
+        populateAiPreview(parsedResult, urlInput);
+
+      } catch (error) {
+        console.error(error);
+        showToast('❌ API 回應失敗。歡迎點擊「測試模擬」功能體驗流暢的 UI 運作！', 'error');
+        resetAiPreview();
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnContent;
+      }
+    }
+
+    async function fetchGeminiWithBackoff(payload) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      let delay = 1000;
+      const maxRetries = 5;
+
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            return JSON.parse(textResponse);
+          }
+          if (response.status === 429 || response.status >= 500) {
+            // Keep going and backoff
+          } else {
+            throw new Error(`API error code ${response.status}`);
+          }
+        } catch (e) {
+          if (i === maxRetries - 1) throw e;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+      }
+    }
+
+    function populateAiPreview(recipeData, sourceUrl) {
+      document.getElementById('ai-loading-state').classList.add('hidden');
+      document.getElementById('ai-empty-preview-state').classList.add('hidden');
+      document.getElementById('ai-result-form').classList.remove('hidden');
+
+      document.getElementById('ai-preview-title').value = recipeData.title || '';
+      document.getElementById('ai-preview-appliance').value = ['氣炸鍋','電鍋','電磁爐'].includes(recipeData.appliance) ? recipeData.appliance : '氣炸鍋';
+      document.getElementById('ai-preview-time').value = recipeData.cookTime || '15 分鐘';
+      document.getElementById('ai-preview-description').value = recipeData.description || '';
+
+      const ingText = recipeData.ingredients.map(i => `${i.name}, ${i.amount}`).join('\n');
+      document.getElementById('ai-preview-ingredients').value = ingText;
+
+      const stepText = recipeData.steps.join('\n');
+      document.getElementById('ai-preview-steps').value = stepText;
+
+      document.getElementById('ai-result-form').dataset.sourceUrl = sourceUrl;
+      showToast('✨ 成功擷取！可在右側修改後，點擊儲存入庫。');
+    }
+
+    function resetAiPreview() {
+      document.getElementById('ai-loading-state').classList.add('hidden');
+      document.getElementById('ai-result-form').classList.add('hidden');
+      document.getElementById('ai-empty-preview-state').classList.remove('hidden');
+      document.getElementById('ai-import-url').value = '';
+    }
+
+    function saveAiPreviewedRecipe() {
+      const title = document.getElementById('ai-preview-title').value.trim();
+      const appliance = document.getElementById('ai-preview-appliance').value;
+      const cookTime = document.getElementById('ai-preview-time').value.trim();
+      const description = document.getElementById('ai-preview-description').value.trim();
+      const ingredientsText = document.getElementById('ai-preview-ingredients').value.trim();
+      const stepsText = document.getElementById('ai-preview-steps').value.trim();
+      const sourceUrl = document.getElementById('ai-result-form').dataset.sourceUrl || '';
+
+      if (!title) {
+        showToast('⚠️ 標題不得為空白！', 'error');
+        return;
+      }
+
+      const ingredients = ingredientsText.split('\n').filter(line => line.trim() !== '').map(line => {
+        const parts = line.split(',');
+        return {
+          name: parts[0] ? parts[0].trim() : line.trim(),
+          amount: parts[1] ? parts[1].trim() : '適量'
+        }
+      });
+
+      const steps = stepsText.split('\n').filter(line => line.trim() !== '').map(line => line.trim());
+
+      const newRecipe = {
+        id: 'ai-recipe-' + Date.now(),
+        title,
+        appliance,
+        cookTime,
+        description,
+        sourceUrl,
+        ingredients,
+        steps,
+        createdAt: new Date().toISOString()
+      };
+
+      recipes.unshift(newRecipe);
+      localStorage.setItem('smart_kitchen_recipes', JSON.stringify(recipes));
+      resetAiPreview();
+      showToast('🎉 食譜已成功儲存！');
+      switchTab('recipes');
+    }
+
+    // Interactive simulator for high-fidelity offline tests
+    function simulateAiImport() {
+      const demoUrl = "https://icook.tw/recipes/384210";
+      document.getElementById('ai-import-url').value = demoUrl;
+      
+      document.getElementById('ai-empty-preview-state').classList.add('hidden');
+      document.getElementById('ai-result-form').classList.add('hidden');
+      document.getElementById('ai-loading-state').classList.remove('hidden');
+
+      setTimeout(() => {
+        const mockParsed = {
+          title: "鮮香酥脆嫩椒鹽豆腐 (氣炸鍋版)",
+          appliance: "氣炸鍋",
+          cookTime: "12 分鐘",
+          description: "令人垂涎欲滴的宵夜點心配方！完美配合 Marigold 烘烤的高溫椒鹽工藝！",
+          ingredients: [
+            { name: "板豆腐 (切大丁)", amount: "1 盒" },
+            { name: "地瓜粉", amount: "3 大匙" },
+            { name: "經典蒜香椒鹽粉", amount: "1.5 茶匙" },
+            { name: "橄欖油噴霧", amount: "少許" },
+            { name: "新鮮蔥花", amount: "1 大匙" }
+          ],
+          steps: [
+            "板豆腐切成 2 公分立體均勻方丁，置於紙巾吸乾外層多餘水分。",
+            "將豆腐均勻沾裹地瓜粉，拍掉餘粉靜置 1 分鐘待其回潮定型。",
+            "將豆腐平鋪置入氣炸鍋，表面均勻用油霧噴灑一層。",
+            "設定氣炸溫度 190 度氣炸 8 分鐘，取出翻面並撒入蔥花，補噴油霧續氣炸 4 分鐘即可，起鍋後裹灑椒鹽粉。"
+          ]
+        };
+        populateAiPreview(mockParsed, demoUrl);
+      }, 1200);
+    }
+
+
+    // --- UTILITIES ---
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+    }
+
+    // iOS Banner style toast notifications
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      // Floating capsule banner design typical of iOS notifications
+      toast.className = "flex items-center gap-2.5 px-4.5 py-3 rounded-2xl shadow-premium-sheet border text-xs font-black bg-white/95 backdrop-blur-md border-celeste/40 text-slate-800 w-full mb-2.5 ios-toast-animation pointer-events-auto";
+      
+      if (type !== 'success') {
+        toast.className = "flex items-center gap-2.5 px-4.5 py-3 rounded-2xl shadow-premium-sheet border text-xs font-black bg-red-50/95 backdrop-blur-md border-red-200/50 text-red-900 w-full mb-2.5 ios-toast-animation pointer-events-auto";
+      }
+
+      toast.innerHTML = `
+        <div class="shrink-0 text-marigold text-sm">${type === 'success' ? '💡' : '⚠️'}</div>
+        <div class="leading-relaxed">${message}</div>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease";
+        toast.style.transform = "translate(-50%, -20px)";
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 350);
+      }, 3500);
+    }
+
+    function copyToClipboard(elementId) {
+      const text = document.getElementById(elementId).innerText;
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+      showToast("📋 Schema 設計架構 JSON 已複製！");
+    }
+  </script>
+</body>
+</html>
